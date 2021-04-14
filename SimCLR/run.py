@@ -55,6 +55,9 @@ parser.add_argument('--checkpoint-step', default=2, type=int,
                     help='Checkpoint after every number of epochs')
 parser.add_argument('-checkpoint-dir', default='./',
                     help='path to checkpoints directory')
+parser.add_argument('--multi-gpu', action='store_true',
+                    help='Whether multiple gpus need to be used.')
+
 
 
 def main():

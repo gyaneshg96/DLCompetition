@@ -17,6 +17,10 @@ class SimCLR(object):
     def __init__(self, *args, **kwargs):
         self.args = kwargs['args']
         self.model = kwargs['model'].to(self.args.device)
+        if torch.cuda.device_count() > 1 and self.args.multi_gpu == True:
+            logging.info("Training on multiple GPUs...")
+            logging.debug("Training on multiple GPUs...")
+            self.model = torch.nn.DataParallel(self.model)
         self.optimizer = kwargs['optimizer']
         self.scheduler = kwargs['scheduler']
         self.writer = SummaryWriter()
