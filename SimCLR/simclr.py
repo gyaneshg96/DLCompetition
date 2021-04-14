@@ -17,6 +17,10 @@ class SimCLR(object):
     def __init__(self, *args, **kwargs):
         self.args = kwargs['args']
         self.model = kwargs['model'].to(self.args.device)
+        if torch.cuda.device_count() > 1 and self.args.multi_gpu == True:
+            logging.info("Training on multiple GPUs...")
+            logging.debug("Training on multiple GPUs...")
+            self.model = torch.nn.DataParallel(self.model)
         self.optimizer = kwargs['optimizer']
         self.scheduler = kwargs['scheduler']
         self.writer = SummaryWriter()
@@ -96,18 +100,20 @@ class SimCLR(object):
                     logging.debug(f"Epoch: {epoch_counter}\tIter: {n_iter}\tLoss: {loss}\tTop1 accuracy: {top1[0]} \tTop5 accuracy: {top5[0]}")
                 n_iter += 1
 
+            if epoch_counter % self.args.checkpoint_step == self.args.checkpoint_step - 1:
+                # save model checkpoints
+                checkpoint_name = 'checkpoint_{:04d}.pth.tar'.format(self.args.epochs)
+                save_checkpoint({
+                    'epoch': self.args.epochs,
+                    'arch': self.args.arch,
+                    'state_dict': self.model.state_dict(),
+                    'optimizer': self.optimizer.state_dict(),
+                # }, is_best=False, filename=os.path.join(self.writer.log_dir, checkpoint_name))
+                }, is_best=False, filename=os.path.join(self.args.checkpoint_dir, checkpoint_name))
+                logging.info(f"Model checkpoint and metadata has been saved at {self.writer.log_dir}.")
             # warmup for the first 10 epochs
             if epoch_counter >= 10:
                 self.scheduler.step()
             logging.debug(f"Epoch: {epoch_counter}\tLoss: {loss}\tTop1 accuracy: {top1[0]}")
 
         logging.info("Training has finished.")
-        # save model checkpoints
-        checkpoint_name = 'checkpoint_{:04d}.pth.tar'.format(self.args.epochs)
-        save_checkpoint({
-            'epoch': self.args.epochs,
-            'arch': self.args.arch,
-            'state_dict': self.model.state_dict(),
-            'optimizer': self.optimizer.state_dict(),
-        }, is_best=False, filename=os.path.join(self.writer.log_dir, checkpoint_name))
-        logging.info(f"Model checkpoint and metadata has been saved at {self.writer.log_dir}.")

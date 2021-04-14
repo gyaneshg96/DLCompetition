@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#SBATCH --gres=gpu:1
-#SBATCH --partition=n1s8-t4-1
+#SBATCH --gres=gpu:2
+#SBATCH --partition=n1s16-t4-2
 #SBATCH --account=dl11
-#SBATCH --time=6:00:00
+#SBATCH --time=1:00:00
 #SBATCH --output=demo_%j.out
 #SBATCH --error=demo_%j.err
 #SBATCH --exclusive
@@ -12,7 +12,6 @@
 /share/apps/local/bin/p2pBandwidthLatencyTest > /dev/null 2>&1
 
 set -x
->>>>>>> 944b8b9c7fd7ad8d7cf31bc8d9366d34fe06cc92
 
 mkdir /tmp/$USER
 export SINGULARITY_CACHEDIR=/tmp/$USER
@@ -30,6 +29,8 @@ singularity exec --nv \
 /bin/bash -c "
 source /ext3/env.sh
 conda activate dev
-ython SimCLR/run.py -data /dataset/ -dataset-name dldataset \
-        -checkpoint-dir $SCRATCH/simclr/ --checkpoint-step 5 --log-every-n-steps 200 --epochs 20
+python SimCLR/run.py --multi-gpu --fp16-precision -a resnet50 \
+        -b 256 -data /dataset/ -dataset-name dldataset \
+        -checkpoint-dir $SCRATCH/simclr/ --checkpoint-step 5 \
+        --log-every-n-steps 200 --epochs 1
 "

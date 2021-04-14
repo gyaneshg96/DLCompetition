@@ -51,6 +51,14 @@ parser.add_argument('--n-views', default=2, type=int, metavar='N',
                     help='Number of views for contrastive learning training.')
 parser.add_argument('--gpu-index', default=0, type=int, help='Gpu index.')
 
+parser.add_argument('--checkpoint-step', default=2, type=int,
+                    help='Checkpoint after every number of epochs')
+parser.add_argument('-checkpoint-dir', default='./',
+                    help='path to checkpoints directory')
+parser.add_argument('--multi-gpu', action='store_true',
+                    help='Whether multiple gpus need to be used.')
+
+
 
 def main():
     args = parser.parse_args()
