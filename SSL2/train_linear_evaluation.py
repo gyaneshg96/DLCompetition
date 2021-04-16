@@ -17,7 +17,7 @@ import argparse
 parser = argparse.ArgumentParser(description="Linear evaluation script")
 parser.add_argument("--seed", default=-1, type=int, help="Seed for Numpy and PyTorch. Default: -1 (None)")
 parser.add_argument("--epochs", default=100, type=int, help="Total number of epochs")
-parser.add_argument("--dataset", default="cifar10", help="Dataset: cifar10|100, supercifar100, tiny, slim, stl10")
+parser.add_argument("--dataset", default="cifar10", help="Dataset: cifar10|100, supercifar100, tiny, slim, stl10, dldataset")
 parser.add_argument("--backbone", default="conv4", help="Backbone: conv4, resnet|8|32|34|56")
 parser.add_argument("--method", default="standard", help="Method name (used just as string in the checkpoint name)")
 parser.add_argument("--data_size", default=128, type=int, help="Size of the mini-batch")

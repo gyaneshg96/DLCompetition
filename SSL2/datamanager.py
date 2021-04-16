@@ -20,6 +20,8 @@ import torchvision.datasets as dset
 import torchvision.transforms as transforms
 import numpy as np
 from PIL import Image
+from torch.utils.data import Dataset
+import natsort
 
 class MultiSTL10(dset.STL10):
     def __init__(self, repeat_augmentations, **kwds):
@@ -216,6 +218,33 @@ class MultiSlimImageFolder(dset.ImageFolder):
 
         return img, img_list, target
 
+class CustomDataSet(Dataset):
+    def __init__(self, main_dir, transform, labels = "NA", repeat_augmentations="None"):
+        self.main_dir = main_dir
+        self.transform = transform
+        all_imgs = os.listdir(main_dir)
+        self.total_imgs = natsort.natsorted(all_imgs)
+        self.labels = labels
+        self.repeat_augmentations = repeat_augmentations
+
+    def __len__(self):
+        return len(self.total_imgs)
+
+    def __getitem__(self, idx):
+        img_loc = os.path.join(self.main_dir, self.total_imgs[idx])
+        image = Image.open(img_loc).convert("RGB")
+        arr = np.array(image, np.uint8, copy=False)
+        img = torch.from_numpy(arr.copy())
+
+        img_list = list()
+        if self.transform is not None:
+          for _ in range(self.repeat_augmentations):
+            image_trans = self.transform(image.copy())
+            img_list.append(image_trans)
+        if self.labels == "NA":
+          return (img, img_list, torch.Tensor([-1])) # label should be unused for this set
+        else:
+          return (img, img_list, self.labels[idx].squeeze())
 
 class DataManager():
     def __init__(self, seed):
@@ -229,7 +258,7 @@ class DataManager():
 
     def _check(self, dataset):
         datasets_list = ["cifar10", "stl10", "cifar100", 
-                         "supercifar100", "tiny", "slim"]
+                         "supercifar100", "tiny", "slim", "dldataset"]
         if(dataset not in datasets_list):
             raise Exception("[ERROR] The dataset " + str(dataset) + " is not supported!")            
         if(dataset=="slim"):
@@ -253,6 +282,7 @@ class DataManager():
         elif(dataset=="cifar100"): return 100
         elif(dataset=="tiny"): return 200
         elif(dataset=="slim"): return 1000
+        elif(dataset=="dldataset"): return 800
 
     def get_train_transforms(self, method, dataset):
         """Returns the training torchvision transformations for each dataset/method.
@@ -282,6 +312,10 @@ class DataManager():
             #Image-Net --> mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
             normalize = transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.25, 0.25, 0.25])
             side = 64; padding = 8
+        elif(dataset=="dldataset"):
+            #Image-Net --> mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+            normalize = transforms.Normalize(mean=[0.4837, 0.4531, 0.4015], std=[0.2212, 0.2165, 0.2156])
+            side = 96; padding = 12
 
         if(method=="relationnet" or method=="simclr"):
             color_jitter = transforms.ColorJitter(brightness=0.8, contrast=0.8, saturation=0.8, hue=0.2)
@@ -351,6 +385,8 @@ class DataManager():
                 train_set = MultiTinyImageFolder(repeat_augmentations, root="./data/tiny-imagenet-200/train", transform=train_transform)
             elif(dataset=="slim"): 
                 train_set = MultiSlimImageFolder(repeat_augmentations, root="./data/SlimageNet64/train", transform=train_transform)
+            elif(dataset=="dldataset"):
+                train_set = CustomDataSet("dataset/unlabeled", transform=train_transform, repeat_augmentations=repeat_augmentations)
         elif(data_type=="single"):
         #Used for: deepinfomax, rotationnet, standard, lineval, finetune, deepcluster
             if(dataset=="cifar10"): 
@@ -365,6 +401,9 @@ class DataManager():
                 train_set = TinyImageFolder(root="./data/tiny-imagenet-200/train", transform=train_transform)
             elif(dataset=="slim"): 
                 train_set = SlimImageFolder(root="./data/SlimageNet64/train", transform=train_transform)
+            elif(dataset=="dldataset"):
+                train_set = CustomDataSet("dataset/train", transform=train_transform, repeat_augmentations=repeat_augmentations)
+
         elif(data_type=="unsupervised"):
             if(dataset=="stl10"):
                 train_set = dset.STL10(root="data", split="unlabeled", transform=train_transform, download=True)
@@ -402,6 +441,10 @@ class DataManager():
             normalize = transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.25, 0.25, 0.25])
             test_transform = transforms.Compose([transforms.ToTensor(), normalize])
             test_set = SlimImageFolder(root="./data/SlimageNet64/test", transform=test_transform)
+        elif(dataset=="dldataset"):
+            normalize = transforms.Normalize(mean=[0.4837, 0.4531, 0.4015], std=[0.2212, 0.2165, 0.2156])
+            test_transform = transforms.Compose([transforms.ToTensor(), normalize])
+            train_set = CustomDataSet("dataset/val", transform=test_transform)
         test_loader = torch.utils.data.DataLoader(test_set, batch_size=data_size, shuffle=False, 
                                                    num_workers=num_workers, pin_memory=True)
         return test_loader
