@@ -12,7 +12,6 @@
 /share/apps/local/bin/p2pBandwidthLatencyTest > /dev/null 2>&1
 
 set -x
->>>>>>> 944b8b9c7fd7ad8d7cf31bc8d9366d34fe06cc92
 
 mkdir /tmp/$USER
 export SINGULARITY_CACHEDIR=/tmp/$USER
@@ -30,6 +29,5 @@ singularity exec --nv \
 /bin/bash -c "
 source /ext3/env.sh
 conda activate dev
-ython SimCLR/run.py -data /dataset/ -dataset-name dldataset \
-        -checkpoint-dir $SCRATCH/simclr/ --checkpoint-step 5 --log-every-n-steps 200 --epochs 20
+python SimCLR/simclr_resnet50.py  
 "

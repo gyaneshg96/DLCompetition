@@ -61,10 +61,17 @@ class SimCLR(object):
     def train(self, train_loader):
 
         scaler = GradScaler(enabled=self.args.fp16_precision)
+	checkpoint = torch.load('/scratch/gg2501/simclr/checkpoint_0150.pth.tar')
+	state_dict = checkpoint['state_dict']
+	for k in list(state_dict.keys()):
+	    if k.startswith('module.backbone.'):
+		state_dict['backbone.' + k[len("module.backbone."):]] = state_dict[k]
+	    del state_dict[k]
+	self.module.load_state_dict(state_dict)
+	self.optimizer.load_state_dict(checkpoint['optimizer'])
 
         # save config file
         save_config_file(self.writer.log_dir, self.args)
-
         n_iter = 0
         logging.info(f"Start SimCLR training for {self.args.epochs} epochs.")
         logging.info(f"Training with gpu: {self.args.disable_cuda}.")
@@ -102,9 +109,9 @@ class SimCLR(object):
 
             if epoch_counter % self.args.checkpoint_step == self.args.checkpoint_step - 1:
                 # save model checkpoints
-                checkpoint_name = 'checkpoint_{:04d}.pth.tar'.format(self.args.epochs)
+                checkpoint_name = 'checkpoint_{:04d}.pth.tar'.format(epoch_counter)
                 save_checkpoint({
-                    'epoch': self.args.epochs,
+                    'epoch': self.args.epoch_counter,
                     'arch': self.args.arch,
                     'state_dict': self.model.state_dict(),
                     'optimizer': self.optimizer.state_dict(),
