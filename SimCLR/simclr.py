@@ -72,6 +72,15 @@ class SimCLR(object):
 
         # save config file
         save_config_file(self.writer.log_dir, self.args)
+        checkpoint = torch.load('/scratch/gg2501/simclr/checkpoint_0150.pth.tar')
+        state_dict = checkpoint['state_dict']
+        for k in list(state_dict.keys()):
+            if k.startswith('module.backbone.'):
+                state_dict['backbone.' + k[len("module.backbone."):]] = state_dict[k]
+        del state_dict[k]
+        model.load_state_dict(state_dict)
+        
+        optimizer.load_state_dict(checkpoint['optimizer'])        
         n_iter = 0
         logging.info(f"Start SimCLR training for {self.args.epochs} epochs.")
         logging.info(f"Training with gpu: {self.args.disable_cuda}.")
