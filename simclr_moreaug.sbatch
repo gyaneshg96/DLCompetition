@@ -30,7 +30,7 @@ singularity exec --nv \
 source /ext3/env.sh
 conda activate dev
 python SimCLR/run.py --multi-gpu --fp16-precision -a resnet18 \
-        -b 256 -data /dataset/ -dataset-name dldataset_aug7 \
+        -b 2048 -data /dataset/ -dataset-name dldataset_aug7 \
         -checkpoint-dir $SCRATCH/simclr/ --checkpoint-step 5 \
         --log-every-n-steps 200 --epochs 100
 "
