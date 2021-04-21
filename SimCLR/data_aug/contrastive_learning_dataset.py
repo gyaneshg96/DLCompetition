@@ -55,8 +55,8 @@ class ContrastiveLearningDataset:
                                                   transforms.RandomApply([color_jitter], p=0.8),
                                                   transforms.RandomGrayscale(p=0.2),
                                                   GaussianBlur(kernel_size=int(0.1 * size)),
-                                                  transforms.RandomRotation(45),
-                                                  transforms.RandomAffine(p=0.2),
+                                                  transforms.RandomRotation(degrees=45),
+                                                  transforms.RandomAffine(degrees=45),
                                                   transforms.ToTensor()])
         return data_transforms
 
