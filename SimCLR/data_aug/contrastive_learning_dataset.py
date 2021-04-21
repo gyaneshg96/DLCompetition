@@ -39,15 +39,25 @@ class ContrastiveLearningDataset:
         self.root_folder = root_folder
 
     @staticmethod
-    def get_simclr_pipeline_transform(size, s=1):
+    def get_simclr_pipeline_transform(size, s=1, num_aug=5):
         """Return a set of data augmentation transformations as described in the SimCLR paper."""
         color_jitter = transforms.ColorJitter(0.8 * s, 0.8 * s, 0.8 * s, 0.2 * s)
-        data_transforms = transforms.Compose([transforms.RandomResizedCrop(size=size),
-                                              transforms.RandomHorizontalFlip(),
-                                              transforms.RandomApply([color_jitter], p=0.8),
-                                              transforms.RandomGrayscale(p=0.2),
-                                              GaussianBlur(kernel_size=int(0.1 * size)),
-                                              transforms.ToTensor()])
+        if num_aug == 5:
+            data_transforms = transforms.Compose([transforms.RandomResizedCrop(size=size),
+                                                  transforms.RandomHorizontalFlip(),
+                                                  transforms.RandomApply([color_jitter], p=0.8),
+                                                  transforms.RandomGrayscale(p=0.2),
+                                                  GaussianBlur(kernel_size=int(0.1 * size)),
+                                                  transforms.ToTensor()])
+        elif num_aug == 7:
+            data_transforms = transforms.Compose([transforms.RandomResizedCrop(size=size),
+                                                  transforms.RandomHorizontalFlip(),
+                                                  transforms.RandomApply([color_jitter], p=0.8),
+                                                  transforms.RandomGrayscale(p=0.2),
+                                                  GaussianBlur(kernel_size=int(0.1 * size)),
+                                                  transforms.RandomRotation(45),
+                                                  transforms.RandomAffine(p=0.2),
+                                                  transforms.ToTensor()])
         return data_transforms
 
     
@@ -66,7 +76,12 @@ class ContrastiveLearningDataset:
                           'dldataset': lambda: CustomDataSet(self.root_folder + '/unlabeled',
                                                           transform=ContrastiveLearningViewGenerator(
                                                               self.get_simclr_pipeline_transform(96),
-                                                              n_views))}
+                                                              n_views)),
+                          'dldataset_aug7': lambda: CustomDataSet(self.root_folder + '/unlabeled',
+                                                             transform=ContrastiveLearningViewGenerator(
+                                                                 self.get_simclr_pipeline_transform(96, num_aug=7),
+                                                                 n_views))
+                          }
         try:
             dataset_fn = valid_datasets[name]
         except KeyError:
