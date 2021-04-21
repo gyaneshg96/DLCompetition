@@ -3,7 +3,7 @@
 #SBATCH --gres=gpu:2
 #SBATCH --partition=n1s16-t4-2
 #SBATCH --account=dl11
-#SBATCH --time=30:00:00
+#SBATCH --time=24:00:00
 #SBATCH --output=demo_%j.out
 #SBATCH --error=demo_%j.err
 #SBATCH --exclusive
@@ -29,8 +29,8 @@ singularity exec --nv \
 /bin/bash -c "
 source /ext3/env.sh
 conda activate dev
-python SimCLR/run.py --multi-gpu --fp16-precision -a resnet50 \
-        -b 800 -data /dataset/ -dataset-name dldataset \
-        -checkpoint-dir $SCRATCH/simclr/ --checkpoint-step 50 \
+python SimCLR/run.py --multi-gpu --fp16-precision -a resnet34 \
+        -b 1024 -data /dataset/ -dataset-name dldataset \
+        -checkpoint-dir $SCRATCH/simclr/ --checkpoint-step 25 \
         --log-every-n-steps 500 --epochs 100
 "
