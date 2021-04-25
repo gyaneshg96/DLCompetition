@@ -111,7 +111,7 @@ class SimCLR(object):
 
             if epoch_counter % self.args.checkpoint_step == self.args.checkpoint_step - 1:
                 # save model checkpoints
-                checkpoint_name = 'checkpoint_{:04d}.pth.tar'.format(epoch_counter)
+                checkpoint_name = 'checkpoint2_{:04d}.pth.tar'.format(epoch_counter)
                 save_checkpoint({
                     'epoch': self.args.epoch_counter,
                     'arch': self.args.arch,
