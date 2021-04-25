@@ -61,15 +61,6 @@ class SimCLR(object):
     def train(self, train_loader):
 
         scaler = GradScaler(enabled=self.args.fp16_precision)
-	checkpoint = torch.load('/scratch/gg2501/simclr/checkpoint_0150.pth.tar')
-	state_dict = checkpoint['state_dict']
-	for k in list(state_dict.keys()):
-	    if k.startswith('module.backbone.'):
-		state_dict['backbone.' + k[len("module.backbone."):]] = state_dict[k]
-	    del state_dict[k]
-	self.module.load_state_dict(state_dict)
-	self.optimizer.load_state_dict(checkpoint['optimizer'])
-
         # save config file
         save_config_file(self.writer.log_dir, self.args)
         checkpoint = torch.load('/scratch/gg2501/simclr/checkpoint_0150.pth.tar')
@@ -84,6 +75,7 @@ class SimCLR(object):
         n_iter = 0
         logging.info(f"Start SimCLR training for {self.args.epochs} epochs.")
         logging.info(f"Training with gpu: {self.args.disable_cuda}.")
+        loss4 = 0
 
         for epoch_counter in range(self.args.epochs):
             for images, _ in tqdm(train_loader):
@@ -94,14 +86,15 @@ class SimCLR(object):
                 with autocast(enabled=self.args.fp16_precision):
                     features = self.model(images)
                     logits, labels = self.info_nce_loss(features)
-                    loss = self.criterion(logits, labels)
+                    loss4 += self.criterion(logits, labels)
 
-                self.optimizer.zero_grad()
+                if epoch_counter % 4 == 3:
+                    self.optimizer.zero_grad()
+                    scaler.scale(loss4/4).backward()
 
-                scaler.scale(loss).backward()
-
-                scaler.step(self.optimizer)
-                scaler.update()
+                    scaler.step(self.optimizer)
+                    scaler.update()
+                    loss4 = 0
 
                 if n_iter % self.args.log_every_n_steps == 0:
                     top1, top5 = accuracy(logits, labels, topk=(1, 5))
