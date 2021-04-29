@@ -31,6 +31,6 @@ source /ext3/env.sh
 conda activate dev
 python SimCLR/run.py --multi-gpu --fp16-precision -a resnet34 \
         -b 1024 -data /dataset/ -dataset-name dldataset \
-        -checkpoint-dir $SCRATCH/simclr/ --checkpoint-step 25 \
+        -checkpoint-dir $SCRATCH/simclr/ --checkpoint-step 50 \
         --log-every-n-steps 500 --epochs 100
 "

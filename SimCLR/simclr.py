@@ -63,7 +63,7 @@ class SimCLR(object):
         scaler = GradScaler(enabled=self.args.fp16_precision)
         # save config file
         save_config_file(self.writer.log_dir, self.args)
-        #checkpoint = torch.load('/scratch/gg2501/simclr/checkpoint_0150.pth.tar')
+        #checkpoint = torch.load('/scratch/gg2501/simclr/checkpoint_0199.pth.tar')
         #state_dict = checkpoint['state_dict']
         #for k in list(state_dict.keys()):
         #    if k.startswith('module.backbone.'):
@@ -109,7 +109,7 @@ class SimCLR(object):
 
             if epoch_counter % self.args.checkpoint_step == self.args.checkpoint_step - 1:
                 # save model checkpoints
-                checkpoint_name = 'checkpoint_{:04d}.pth.tar'.format(epoch_counter)
+                checkpoint_name = 'checkpoint3_{:04d}.pth.tar'.format(epoch_counter)
                 save_checkpoint({
                     'epoch': epoch_counter,
                     'arch': self.args.arch,

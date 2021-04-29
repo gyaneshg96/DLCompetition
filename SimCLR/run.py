@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description='PyTorch SimCLR')
 parser.add_argument('-data', metavar='DIR', default='./datasets',
                     help='path to dataset')
 parser.add_argument('-dataset-name', default='stl10',
-                    help='dataset name', choices=['stl10', 'cifar10', 'dldataset'])
+                    help='dataset name', choices=['stl10', 'cifar10', 'dldataset', 'dldataset_aug7'])
 parser.add_argument('-a', '--arch', metavar='ARCH', default='resnet18',
                     choices=model_names,
                     help='model architecture: ' +
@@ -81,6 +81,7 @@ def main():
         num_workers=args.workers, pin_memory=True, drop_last=True)
     
     model = ResNetSimCLR(base_model=args.arch, out_dim=args.out_dim)
+
     optimizer = torch.optim.Adam(model.parameters(), args.lr, weight_decay=args.weight_decay)
 
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
