@@ -7,7 +7,7 @@ team_name = "Neural Crusaders"
 email_address = "gg2501@nyu.edu"
 
 def get_model():
-    return models.resnet18(num_classes=800)
+    return models.resnet34(num_classes=800)
 
 eval_transform = transforms.Compose([
     transforms.ToTensor(),
