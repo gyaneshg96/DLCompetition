@@ -63,19 +63,19 @@ class SimCLR(object):
         scaler = GradScaler(enabled=self.args.fp16_precision)
         # save config file
         save_config_file(self.writer.log_dir, self.args)
-        #checkpoint = torch.load('/scratch/gg2501/simclr/checkpoint_0199.pth.tar')
-        #state_dict = checkpoint['state_dict']
+        checkpoint = torch.load('/scratch/gg2501/simclr/checkpoint_0036.pth.tar')
+        state_dict = checkpoint['state_dict']
         #for k in list(state_dict.keys()):
         #    if k.startswith('module.backbone.'):
         #        state_dict['backbone.' + k[len("module.backbone."):]] = state_dict[k]
         #del state_dict[k]
-        #self.model.load_state_dict(state_dict)
+        self.model.load_state_dict(state_dict)
         
-        #self.optimizer.load_state_dict(checkpoint['optimizer'])        
+        self.optimizer.load_state_dict(checkpoint['optimizer'])        
         n_iter = 0
+        min_loss = 100
         logging.info(f"Start SimCLR training for {self.args.epochs} epochs.")
         logging.info(f"Training with gpu: {self.args.disable_cuda}.")
-
         for epoch_counter in range(self.args.epochs):
             for images, _ in tqdm(train_loader):
                 images = torch.cat(images, dim=0)
@@ -103,13 +103,14 @@ class SimCLR(object):
                 
                 if n_iter % self.args.log_every_n_steps == 0:
                     top1, top5 = accuracy(logits, labels, topk=(1, 5))
-                    print(n_iter, top1[0].item(), top5[0].item())
+                    print(n_iter,min_loss,loss.item(), top1[0].item(), top5[0].item())
                     logging.debug(f"Epoch: {epoch_counter}\tIter: {n_iter}\tLoss: {loss}\tTop1 accuracy: {top1[0]} \tTop5 accuracy: {top5[0]}")
                 n_iter += 1
 
-            if epoch_counter % self.args.checkpoint_step == self.args.checkpoint_step - 1:
+            if min_loss > loss.item() or epoch_counter % self.args.checkpoint_step == self.args.checkpoint_step - 1:
                 # save model checkpoints
-                checkpoint_name = 'checkpoint3_{:04d}.pth.tar'.format(epoch_counter)
+                checkpoint_name = 'checkpoint_{:04d}.pth.tar'.format(epoch_counter)
+                print(loss.item(), epoch_counter)
                 save_checkpoint({
                     'epoch': epoch_counter,
                     'arch': self.args.arch,
@@ -119,6 +120,7 @@ class SimCLR(object):
                 }, is_best=False, filename=os.path.join(self.args.checkpoint_dir, checkpoint_name))
                 logging.info(f"Model checkpoint and metadata has been saved at {self.writer.log_dir}.")
             # warmup for the first 10 epochs
+            min_loss = min(min_loss, loss.item())
             if epoch_counter >= 10:
                 self.scheduler.step()
             logging.debug(f"Epoch: {epoch_counter}\tLoss: {loss}\tTop1 accuracy: {top1[0]}")

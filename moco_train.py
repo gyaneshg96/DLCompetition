@@ -16,7 +16,7 @@ from pytorch_lightning.metrics import Metric
 
 
 num_workers = 8
-batch_size = 128
+batch_size = 256
 memory_bank_size = 4096
 seed = 1
 max_epochs = 5
@@ -50,10 +50,6 @@ test_transforms = torchvision.transforms.Compose([
     )
 ])
 
-# We use the moco augmentations for training moco
-dataset_train_moco = lightly.data.LightlyDataset(
-    input_dir="/content/dataset/unlabeled"
-)
 
 class MocoModel(pl.LightningModule):
     def __init__(self):
@@ -90,7 +86,7 @@ class MocoModel(pl.LightningModule):
         (x0, x1), _, _ = batch
         y0, y1 = self.resnet_moco(x0, x1)
         loss = self.criterion(y0, y1)
-        self.log('train_loss_ssl', loss)
+        self.log('train_loss_ssl', loss, sync_dist=True)
         return loss
 
     def training_epoch_end(self, outputs):
@@ -217,12 +213,12 @@ class CustomDataset(torch.utils.data.Dataset):
 
 # train_dataset = CustomDataset(root="/dataset/", split="train", transform=train_classifier_transforms)
 # test_dataset = CustomDataset(root="/dataset", split="val", transform=test_transforms)
-unlabeled_dataset = CustomDataset(root="/dataset", split="unlabeled", transform=test_transforms)
-
 
 dataset_train_moco = lightly.data.LightlyDataset(
-    input_dir="/content/dataset/unlabeled"
+    input_dir="/dataset/unlabeled"
 )
+
+print("Dataset Loaded")
 
 dataloader_train_moco = torch.utils.data.DataLoader(
     dataset_train_moco,
@@ -239,7 +235,7 @@ dataloader_train_moco = torch.utils.data.DataLoader(
 #     shuffle=True,
 #     drop_last=True,
 #     num_workers=num_workers
-# )r
+# )
 
 # dataloader_test = torch.utils.data.DataLoader(
 #     test_dataset,
@@ -253,13 +249,15 @@ dataloader_train_moco = torch.utils.data.DataLoader(
 model = MocoModel.load_from_checkpoint(checkpoint_path="/scratch/gg2501/moco/example.ckpt")
 # model = MocoModel()
 
-max_epochs = 10
+max_epochs = 80
 
-gpus = 1 if torch.cuda.is_available() else 0
+#gpus = 1 if torch.cuda.is_available() else 0
 
-trainer = pl.Trainer(max_epochs=max_epochs, gpus=gpus,
+trainer = pl.Trainer(precision=16, accelerator='dp', max_epochs=max_epochs, gpus=-1,
                      progress_bar_refresh_rate=100,
                      default_root_dir='/scratch/gg2501/moco/')
+
+print("Begin training")
 
 trainer.fit(model, dataloader_train_moco)
 

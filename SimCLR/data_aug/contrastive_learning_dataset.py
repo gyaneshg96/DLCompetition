@@ -75,7 +75,7 @@ class ContrastiveLearningDataset:
                                                           download=True), 
                           'dldataset': lambda: CustomDataSet(self.root_folder + '/unlabeled',
                                                           transform=ContrastiveLearningViewGenerator(
-                                                              self.get_simclr_pipeline_transform(128),
+                                                              self.get_simclr_pipeline_transform(96),
                                                               n_views)),
                           'dldataset_aug7': lambda: CustomDataSet(self.root_folder + '/unlabeled',
                                                              transform=ContrastiveLearningViewGenerator(
