@@ -97,6 +97,36 @@ parser.add_argument('--aug-plus', action='store_true',
 parser.add_argument('--cos', action='store_true',
                     help='use cosine lr schedule')
 
+class CustomDataset(torch.utils.data.Dataset):
+    def __init__(self, root, split, transform):
+        r"""
+        Args:
+            root: Location of the dataset folder, usually it is /dataset
+            split: The split you want to used, it should be one of train, val or unlabeled.
+            transform: the transform you want to applied to the images.
+        """
+
+        self.split = split
+        self.transform = transform
+
+        self.image_dir = os.path.join(root, split)
+        label_path = os.path.join(root, f"{split}_label_tensor.pt")
+
+        self.num_images = len(os.listdir(self.image_dir))
+
+        if os.path.exists(label_path):
+            self.labels = torch.load(label_path)
+        else:
+            self.labels = -1 * torch.ones(self.num_images, dtype=torch.long)
+
+    def __len__(self):
+        return self.num_images
+
+    def __getitem__(self, idx):
+        with open(os.path.join(self.image_dir, f"{idx}.png"), 'rb') as f:
+            img = Image.open(f).convert('RGB')
+
+        return self.transform(img), self.labels[idx]
 
 def main():
     args = parser.parse_args()
@@ -217,13 +247,13 @@ def main_worker(gpu, ngpus_per_node, args):
     cudnn.benchmark = True
 
     # Data loading code
-    traindir = os.path.join(args.data, 'train')
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])
+    # traindir = os.path.join(args.data, 'train')
+    normalize = transforms.Normalize(mean=[0.4837, 0.4531, 0.4015],
+                                     std=[0.2212, 0.2165, 0.2156])
     if args.aug_plus:
         # MoCo v2's aug: similar to SimCLR https://arxiv.org/abs/2002.05709
         augmentation = [
-            transforms.RandomResizedCrop(224, scale=(0.2, 1.)),
+            transforms.RandomResizedCrop(96, scale=(0.2, 1.)),
             transforms.RandomApply([
                 transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)  # not strengthened
             ], p=0.8),
@@ -236,7 +266,7 @@ def main_worker(gpu, ngpus_per_node, args):
     else:
         # MoCo v1's aug: the same as InstDisc https://arxiv.org/abs/1805.01978
         augmentation = [
-            transforms.RandomResizedCrop(224, scale=(0.2, 1.)),
+            transforms.RandomResizedCrop(96, scale=(0.2, 1.)),
             transforms.RandomGrayscale(p=0.2),
             transforms.ColorJitter(0.4, 0.4, 0.4, 0.4),
             transforms.RandomHorizontalFlip(),
@@ -244,9 +274,7 @@ def main_worker(gpu, ngpus_per_node, args):
             normalize
         ]
 
-    train_dataset = datasets.ImageFolder(
-        traindir,
-        moco.loader.TwoCropsTransform(transforms.Compose(augmentation)))
+    train_dataset = CustomDataset(root="/dataset", split="unlabeled", transform=moco.loader.TwoCropsTransform(transforms.Compose(augmentation)))
 
     if args.distributed:
         train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
